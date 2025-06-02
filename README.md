@@ -1,6 +1,40 @@
-# RAG File Search System
+# Business Intelligence & Knowledge Management Platform
 
-A comprehensive web application for file upload, vector storage, and AI-powered search using OpenAI's APIs.
+A unified web application combining RAG file search capabilitie3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the application**:
+   ```bash
+   python app.py
+   ```
+
+5. **Open your browser** to http://localhost:5001
+
+## Analytics Integration
+
+This platform integrates with the **Daily_Reporting** contact center analytics system to provide unified business intelligence capabilities.
+
+### 🎯 **Integrated Features**
+
+- **Business Intelligence Search**: Search across both documents and analytics reports with AI-powered insights
+- **Unified Dashboard**: Combined document management and analytics visualization
+- **Report Ingestion**: Automatic monitoring and processing of business reports
+- **Cross-System Intelligence**: Correlate operational data with policy documents
+
+### 📊 **Analytics Dashboard**
+
+Access the analytics dashboard at `/analytics` to:
+
+- **Monitor System Health**: Real-time status of both RAG and analytics systems
+- **Business Intelligence Search**: AI-powered search combining document context with analytics insights
+- **Report Management**: Upload, monitor, and process business reports
+- **Performance Metrics**: View contact center analytics and operational insights
+
+### 🔄 **Auto-Ingestion**
+
+The system automatically monitors the `Daily_Reporting/reports/` directory for new business reports and processes them into the Business_Analytics_Reports knowledge base for unified search capabilities.ness analytics, featuring file upload, vector storage, AI-powered search, and contact center analytics integration.
 
 ## 📚 Documentation
 
@@ -8,6 +42,7 @@ A comprehensive web application for file upload, vector storage, and AI-powered 
 - **[Executive Overview](EXECUTIVE_OVERVIEW.md)** - Business value, use cases, and ROI analysis
 - **[Complete User Instructions](USER_INSTRUCTIONS.md)** - Detailed setup and usage guide
 - **[Completion Summary](COMPLETION_SUMMARY.md)** - Technical implementation overview
+- **[Integration Plan](INTEGRATION_PLAN.md)** - Analytics integration architecture and strategy
 
 ## 🎯 Use Cases
 
@@ -17,8 +52,11 @@ Transform scattered documents into an intelligent knowledge base. Ask questions 
 ### 💼 **Customer Support Excellence** 
 Enable support teams to instantly find product documentation and troubleshooting guides. Reduce response times and improve accuracy.
 
-### 📊 **Research & Analysis**
-Quickly search through technical specifications, research papers, and analytical reports. Perfect for R&D teams and analysts.
+### 📊 **Business Analytics & Reporting**
+Analyze contact center performance, customer interactions, and business metrics. Search through analytics reports and get AI-powered insights from your business data.
+
+### 🔄 **Unified Intelligence Platform**
+Combine document search with business analytics for comprehensive organizational intelligence. Cross-reference operational data with policy documents and procedures.
 
 ### 📋 **Compliance & Legal Research**
 Search through contracts, regulations, and compliance documents with AI-powered precision. Essential for legal and compliance teams.
@@ -33,22 +71,38 @@ Search through contracts, regulations, and compliance documents with AI-powered 
 
 ## Features
 
+### 📄 **Document Management**
 - **File Upload**: Support for multiple file formats (PDF, TXT, DOCX, etc.)
 - **URL Import**: Upload files directly from URLs  
 - **Vector Storage**: Manage multiple vector stores for organized file collections
 - **AI-Powered Search**: Two search modes:
   - **Semantic Search**: Direct vector similarity search
   - **AI-Assisted Search**: Generated responses with source citations
-- **Modern Web Interface**: Responsive design with drag-and-drop functionality
+
+### 📊 **Business Analytics Integration**
+- **Contact Center Analytics**: Integrated Daily_Reporting system for call center insights
+- **Business Intelligence Search**: AI-powered search across both documents and analytics reports
+- **Report Ingestion**: Automatic monitoring and processing of business reports
+- **Unified Dashboard**: Combined view of document search and business analytics
+
+### 🎨 **Modern Interface**
+- **Responsive Design**: Bootstrap-based interface with drag-and-drop functionality
 - **Real-time Updates**: Progress tracking and status monitoring
 - **Export Results**: Export search results in multiple formats
+- **Analytics Dashboard**: Comprehensive business intelligence interface
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Flask API     │    │   OpenAI API    │
-│   (HTML/CSS/JS) │◄──►│   (Python)      │◄──►│   (Vector Store)│
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Flask API     │    │   OpenAI API    │    │ Daily_Reporting │
+│   (HTML/CSS/JS) │◄──►│   (Python)      │◄──►│   (Vector Store)│    │   (Analytics)   │
+│                 │    │                 │    │                 │    │                 │
+│ • Document UI   │    │ • RAG System    │    │ • Embeddings    │    │ • ML Analytics  │
+│ • Analytics UI  │    │ • Analytics API │    │ • Chat API      │    │ • Contact Center│
+│ • Unified Search│    │ • Integration   │    │ • Search        │    │ • Reports       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼

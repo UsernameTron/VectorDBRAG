@@ -89,3 +89,4 @@ instance/
 
 # Docker
 .dockerignore
+Daily_Reporting/

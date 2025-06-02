@@ -1,9 +1,10 @@
 """
-Flask web application for the RAG File Search System.
+Flask web application for the RAG File Search System with Analytics Integration.
 """
 import os
 import json
 import traceback
+import asyncio
 from typing import Dict, Any
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
@@ -12,6 +13,8 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from search_system import SearchSystem
 from config import Config
+from integrations.analytics_integration import AnalyticsIntegration
+from integrations.report_ingestion import ReportIngestion
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -44,6 +47,21 @@ def create_app(config_name: str | None = None) -> Flask:
     # Initialize search system
     search_system = SearchSystem(config)
     app.search_system = search_system
+    
+    # Initialize analytics integration
+    try:
+        analytics_integration = AnalyticsIntegration(search_system, "Daily_Reporting")
+        app.analytics_integration = analytics_integration
+        
+        # Initialize report ingestion
+        report_ingestion = ReportIngestion(search_system, "Daily_Reporting")
+        app.report_ingestion = report_ingestion
+        
+        print("✅ Analytics integration initialized successfully")
+    except Exception as e:
+        print(f"⚠️  Analytics integration failed: {e}")
+        app.analytics_integration = None
+        app.report_ingestion = None
     
     # Register error handlers
     register_error_handlers(app)
@@ -305,6 +323,184 @@ def register_routes(app: Flask):
                 'error': 'Failed to get status',
                 'message': str(e)
             }), 500
+
+    # Analytics Integration Routes
+    @app.route('/analytics')
+    def analytics_dashboard():
+        """Render the analytics dashboard page."""
+        return render_template('analytics.html')
+
+    @app.route('/api/analytics/dashboard')
+    def get_analytics_dashboard():
+        """Get analytics dashboard data."""
+        try:
+            if not app.analytics_integration:
+                return jsonify({
+                    'error': 'Analytics not available',
+                    'message': 'Analytics integration is not initialized.'
+                }), 503
+
+            # Run async function in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                dashboard_data = loop.run_until_complete(
+                    app.analytics_integration.get_analytics_dashboard_data()
+                )
+            finally:
+                loop.close()
+
+            return jsonify({
+                'success': True,
+                'data': dashboard_data
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Analytics dashboard error: {str(e)}")
+            return jsonify({
+                'error': 'Failed to get analytics data',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/analytics/search', methods=['POST'])
+    def analytics_search():
+        """Perform business intelligence search."""
+        try:
+            if not app.analytics_integration:
+                return jsonify({
+                    'error': 'Analytics not available',
+                    'message': 'Analytics integration is not initialized.'
+                }), 503
+
+            data = request.get_json()
+            query = data.get('query')
+            search_type = data.get('search_type', 'assisted')
+
+            if not query:
+                return jsonify({
+                    'error': 'Query required',
+                    'message': 'Search query is required.'
+                }), 400
+
+            # Run async function in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                results = loop.run_until_complete(
+                    app.analytics_integration.search_business_intelligence(query, search_type)
+                )
+            finally:
+                loop.close()
+
+            return jsonify({
+                'success': True,
+                'results': results
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Analytics search error: {str(e)}")
+            return jsonify({
+                'error': 'Analytics search failed',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/analytics/ingestion/status')
+    def get_ingestion_status():
+        """Get report ingestion status."""
+        try:
+            if not app.report_ingestion:
+                return jsonify({
+                    'error': 'Report ingestion not available',
+                    'message': 'Report ingestion is not initialized.'
+                }), 503
+
+            status = app.report_ingestion.get_ingestion_status()
+            return jsonify({
+                'success': True,
+                'status': status
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Ingestion status error: {str(e)}")
+            return jsonify({
+                'error': 'Failed to get ingestion status',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/analytics/ingestion/bulk', methods=['POST'])
+    def trigger_bulk_ingestion():
+        """Trigger manual bulk ingestion of reports."""
+        try:
+            if not app.report_ingestion:
+                return jsonify({
+                    'error': 'Report ingestion not available',
+                    'message': 'Report ingestion is not initialized.'
+                }), 503
+
+            results = app.report_ingestion.manual_bulk_ingestion()
+            return jsonify({
+                'success': True,
+                'results': results
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Bulk ingestion error: {str(e)}")
+            return jsonify({
+                'error': 'Bulk ingestion failed',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/analytics/sample-reports', methods=['POST'])
+    def create_sample_reports():
+        """Create sample reports for testing."""
+        try:
+            if not app.report_ingestion:
+                return jsonify({
+                    'error': 'Report ingestion not available',
+                    'message': 'Report ingestion is not initialized.'
+                }), 503
+
+            count = app.report_ingestion.create_sample_reports()
+            return jsonify({
+                'success': True,
+                'message': f'Created {count} sample reports',
+                'reports_created': count
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Sample reports error: {str(e)}")
+            return jsonify({
+                'error': 'Failed to create sample reports',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/integration/health')
+    def integration_health():
+        """Check integration health status."""
+        try:
+            health_data = {
+                'rag_system': 'healthy',
+                'analytics_integration': 'healthy' if app.analytics_integration else 'disabled',
+                'report_ingestion': 'healthy' if app.report_ingestion else 'disabled',
+                'timestamp': json.dumps(None)  # Will be set by datetime
+            }
+
+            if app.analytics_integration:
+                analytics_health = app.analytics_integration.get_integration_health()
+                health_data['analytics_details'] = analytics_health
+
+            return jsonify({
+                'success': True,
+                'health': health_data
+            })
+
+        except Exception as e:
+            current_app.logger.error(f"Integration health check error: {str(e)}")
+            return jsonify({
+                'error': 'Health check failed',
+                'message': str(e)
+            }), 500
+    
 
 
 if __name__ == '__main__':
