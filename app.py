@@ -294,6 +294,18 @@ def register_routes(app: Flask):
                     'message': 'Search type must be "semantic" or "assisted".'
                 }), 400
             
+            # Handle serialization of OpenAI Response objects
+            if hasattr(results, '__dict__'):
+                try:
+                    # Convert Response object to dictionary for JSON serialization
+                    results = {
+                        'content': str(results),
+                        'type': type(results).__name__
+                    }
+                except Exception as serialize_error:
+                    current_app.logger.warning(f"Serialization fallback: {serialize_error}")
+                    results = {'content': str(results)}
+            
             return jsonify({
                 'success': True,
                 'query': query,
