@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --secondary-color: #34a853;
+            --background-color: #ffffff;
+            --surface-color: #f8f9fa;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #dadce0;
+            --shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+            --shadow-hover: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #8ab4f8;
+            --primary-hover: #aecbfa;
+            --secondary-color: #81c995;
+            --background-color: #202124;
+            --surface-color: #303134;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border-color: #5f6368;
+            --shadow: 0 1px 2px 0 rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15);
+            --shadow-hover: 0 1px 3px 0 rgba(0,0,0,.3), 0 4px 8px 3px rgba(0,0,0,.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--surface-color);
+            box-shadow: var(--shadow);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .workflow-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .workflow-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .workflow-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .workflow-icon {
+            color: var(--primary-color);
+            font-size: 2rem;
+        }
+
+        .workflow-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .workflow-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+        }
+
+        .agent-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .agent-chip {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .agent-chip:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .agent-chip.selected {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(26, 115, 232, 0.05);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(26, 115, 232, 0.1);
+        }
+
+        .upload-icon {
+            color: var(--text-secondary);
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .primary-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .primary-button:hover {
+            background-color: var(--primary-hover);
+            box-shadow: var(--shadow);
+        }
+
+        .primary-button:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .secondary-button {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .secondary-button:hover {
+            background-color: rgba(26, 115, 232, 0.1);
+        }
+
+        .example-queries {
+            margin-top: 1rem;
+        }
+
+        .example-query {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .example-query:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .results-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-content {
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-icon {
+            color: var(--text-secondary);
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-file:hover {
+            background-color: rgba(234, 67, 53, 0.1);
+            color: #ea4335;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .workflow-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span class="material-icons">psychology</span>
+            AI Agent Dashboard
+        </h1>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span class="material-icons" id="theme-icon">dark_mode</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="workflow-grid">
+            <!-- Ask Questions Workflow -->
+            <div class="workflow-card">
+                <div class="workflow-header">
+                    <span class="material-icons workflow-icon">chat</span>
+                    <h2 class="workflow-title">Ask Questions</h2>
+                </div>
+                <p class="workflow-description">
+                    Get expert insights from our specialized AI agents on any topic or business challenge.
+                </p>
+                
+                <div class="input-group">
+                    <label class="input-label">Your Question</label>
+                    <textarea class="text-input" id="question-input" rows="3" placeholder="What would you like to know?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Choose an Expert</label>
+                    <div class="agent-chips" id="question-agents">
+                        <div class="agent-chip" data-agent="ceo">CEO Advisor</div>
+                        <div class="agent-chip" data-agent="research">Research</div>
+                        <div class="agent-chip" data-agent="performance">Performance</div>
+                        <div class="agent-chip" data-agent="coaching">Coaching</div>
+                        <div class="agent-chip" data-agent="quality">Quality</div>
+                        <div class="agent-chip" data-agent="scheduling">Scheduling</div>
+                    </div>
+                </div>
+
+                <div class="example-queries">
+                    <div class="example-query" onclick="setExampleQuery('How can we improve customer satisfaction scores?')">
+                        How can we improve customer satisfaction scores?
+                    </div>
+                    <div class="example-query" onclick="setExampleQuery('What are the latest trends in our industry?')">
+                        What are the latest trends in our industry?
+                    </div>
+                    <div class="example-query" onclick="setExampleQuery('How should we restructure our team for better performance?')">
+                        How should we restructure our team for better performance?
+                    </div>
+                </div>
+
+                <button class="primary-button" onclick="askQuestion()">
+                    <span class="material-icons">send</span>
+                    Ask Question
+                </button>
+            </div>
+
+            <!-- Analyze Documents Workflow -->
+            <div class="workflow-card">
+                <div class="workflow-header">
+                    <span class="material-icons workflow-icon">description</span>
+                    <h2 class="workflow-title">Analyze Documents</h2>
+                </div>
+                <p class="workflow-description">
+                    Upload documents for in-depth analysis, insights, and recommendations from our AI experts.
+                </p>
+
+                <div class="file-upload" id="file-upload" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">
+                        <span class="material-icons">cloud_upload</span>
+                    </div>
+                    <div class="upload-text">
+                        Click to upload or drag and drop files here<br>
+                        <small>Supports PDF, DOC, TXT, CSV files</small>
+                    </div>
+                    <input type="file" id="file-input" multiple accept=".pdf,.doc,.docx,.txt,.csv" style="display: none;">
+                </div>
+
+                <div class="file-list" id="file-list"></div>
+
+                <div class="input-group">
+                    <label class="input-label">Analysis Focus</label>
+                    <div class="agent-chips" id="analysis-agents">
+                        <div class="agent-chip" data-agent="research">Research</div>
+                        <div class="agent-chip" data-agent="performance">Performance</div>
+                        <div class="agent-chip" data-agent="quality">Quality</div>
+                        <div class="agent-chip" data-agent="code_analyzer">Code Review</div>
+                        <div class="agent-chip" data-agent="ceo">Strategic</div>
+                    </div>
+                </div>
+
+                <button class="primary-button" onclick="analyzeDocuments()" disabled>
+                    <span class="material-icons">analytics</span>
+                    Analyze Documents
+                </button>
+            </div>
+
+            <!-- Business Analytics Workflow -->
+            <div class="workflow-card">
+                <div class="workflow-header">
+                    <span class="material-icons workflow-icon">trending_up</span>
+                    <h2 class="workflow-title">Business Analytics</h2>
+                </div>
+                <p class="workflow-description">
+                    Get comprehensive business insights and analytics reports from your data and operations.
+                </p>
+
+                <div class="input-group">
+                    <label class="input-label">Analytics Request</label>
+                    <textarea class="text-input" id="analytics-input" rows="3" placeholder="What metrics or insights do you need?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Analysis Type</label>
+                    <div class="agent-chips" id="analytics-agents">
+                        <div class="agent-chip" data-agent="performance">Performance Metrics</div>
+                        <div class="agent-chip" data-agent="quality">Quality Analysis</div>
+                        <div class="agent-chip" data-agent="research">Market Research</div>
+                        <div class="agent-chip" data-agent="ceo">Executive Summary</div>
+                    </div>
+                </div>
+
+                <div class="example-queries">
+                    <div class="example-query" onclick="setAnalyticsQuery('Generate a performance dashboard for Q1 2025')">
+                        Generate a performance dashboard for Q1 2025
+                    </div>
+                    <div class="example-query" onclick="setAnalyticsQuery('Analyze customer satisfaction trends over the past 6 months')">
+                        Analyze customer satisfaction trends
+                    </div>
+                    <div class="example-query" onclick="setAnalyticsQuery('Create an executive summary of our operational efficiency')">
+                        Create an executive summary report
+                    </div>
+                </div>
+
+                <button class="primary-button" onclick="generateAnalytics()">
+                    <span class="material-icons">assessment</span>
+                    Generate Analytics
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div class="results-container" id="results-container">
+            <div class="results-header">
+                <span class="material-icons">psychology</span>
+                <h3 id="results-title">AI Response</h3>
+            </div>
+            <div class="results-content" id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let currentTheme = 'light';
+
+        // Theme Toggle
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentTheme);
+            document.getElementById('theme-icon').textContent = currentTheme === 'light' ? 'dark_mode' : 'light_mode';
+            localStorage.setItem('theme', currentTheme);
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                currentTheme = savedTheme;
+                document.body.setAttribute('data-theme', currentTheme);
+                document.getElementById('theme-icon').textContent = currentTheme === 'light' ? 'dark_mode' : 'light_mode';
+            }
+        });
+
+        // Agent Chip Selection
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('agent-chip')) {
+                const container = e.target.parentElement;
+                container.querySelectorAll('.agent-chip').forEach(chip => chip.classList.remove('selected'));
+                e.target.classList.add('selected');
+            }
+        });
+
+        // File Upload Handling
+        const fileUpload = document.getElementById('file-upload');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+
+        fileUpload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+
+        fileUpload.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+        });
+
+        fileUpload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            for (let file of files) {
+                if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            }
+            updateFileList();
+            updateAnalyzeButton();
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <span class="material-icons file-icon">description</span>
+                        <span>${file.name}</span>
+                        <small>(${(file.size / 1024).toFixed(1)} KB)</small>
+                    </div>
+                    <button class="remove-file" onclick="removeFile(${index})">
+                        <span class="material-icons">close</span>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            updateAnalyzeButton();
+        }
+
+        function updateAnalyzeButton() {
+            const analyzeButton = document.querySelector('.workflow-card:nth-child(2) .primary-button');
+            analyzeButton.disabled = selectedFiles.length === 0;
+        }
+
+        // Example Query Functions
+        function setExampleQuery(query) {
+            document.getElementById('question-input').value = query;
+        }
+
+        function setAnalyticsQuery(query) {
+            document.getElementById('analytics-input').value = query;
+        }
+
+        // API Functions
+        async function askQuestion() {
+            const question = document.getElementById('question-input').value.trim();
+            const selectedAgent = document.querySelector('#question-agents .agent-chip.selected');
+            
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            if (!selectedAgent) {
+                alert('Please select an expert');
+                return;
+            }
+
+            const agentType = selectedAgent.getAttribute('data-agent');
+            await callAgent('question', question, agentType);
+        }
+
+        async function analyzeDocuments() {
+            const selectedAgent = document.querySelector('#analysis-agents .agent-chip.selected');
+            
+            if (selectedFiles.length === 0) {
+                alert('Please upload at least one document');
+                return;
+            }
+            
+            if (!selectedAgent) {
+                alert('Please select an analysis focus');
+                return;
+            }
+
+            const agentType = selectedAgent.getAttribute('data-agent');
+            
+            // For now, we'll analyze the file names and provide a mock response
+            const fileNames = selectedFiles.map(f => f.name).join(', ');
+            const query = `Please analyze these uploaded documents: ${fileNames}`;
+            
+            await callAgent('document_analysis', query, agentType);
+        }
+
+        async function generateAnalytics() {
+            const analyticsRequest = document.getElementById('analytics-input').value.trim();
+            const selectedAgent = document.querySelector('#analytics-agents .agent-chip.selected');
+            
+            if (!analyticsRequest) {
+                alert('Please enter an analytics request');
+                return;
+            }
+            
+            if (!selectedAgent) {
+                alert('Please select an analysis type');
+                return;
+            }
+
+            const agentType = selectedAgent.getAttribute('data-agent');
+            await callAgent('analytics', analyticsRequest, agentType);
+        }
+
+        async function callAgent(workflowType, query, agentType) {
+            const resultsContainer = document.getElementById('results-container');
+            const resultsTitle = document.getElementById('results-title');
+            const resultsContent = document.getElementById('results-content');
+            
+            // Show loading state
+            resultsTitle.textContent = 'AI Agent Processing...';
+            resultsContent.innerHTML = '<div style="display: flex; align-items: center; gap: 1rem;"><div class="loading-spinner"></div> Analyzing your request...</div>';
+            resultsContainer.style.display = 'block';
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const response = await fetch('/api/agents/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        agent_type: agentType,
+                        query: query,
+                        workflow_type: workflowType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Update results
+                resultsTitle.textContent = `${getAgentDisplayName(agentType)} Response`;
+                resultsContent.innerHTML = `
+                    <div style="white-space: pre-wrap; font-family: 'Google Sans', sans-serif;">
+                        ${data.response || 'No response received'}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error calling agent:', error);
+                resultsTitle.textContent = 'Error';
+                resultsContent.innerHTML = `
+                    <div style="color: #ea4335; display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="material-icons">error</span>
+                        Failed to get response from AI agent. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        function getAgentDisplayName(agentType) {
+            const displayNames = {
+                'ceo': 'CEO Advisor',
+                'research': 'Research Expert',
+                'performance': 'Performance Analyst',
+                'coaching': 'Coaching Specialist',
+                'quality': 'Quality Expert',
+                'scheduling': 'Scheduling Optimizer',
+                'code_analyzer': 'Code Review Expert'
+            };
+            return displayNames[agentType] || 'AI Expert';
+        }
+    </script>
+</body>
+</html>

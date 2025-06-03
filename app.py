@@ -75,9 +75,28 @@ def create_app(config_name: str | None = None) -> Flask:
         register_agent_routes(app)
         
         print("✅ Unified agent system initialized with 12 specialized agents")
+        
+        # Initialize RAG-Agent integration for code improvement
+        try:
+            from unified_agent_system_rag_integration import integrate_rag_with_agents
+            from app_code_improvement_routes import register_code_improvement_routes
+            
+            # Create RAG-enhanced code improvement orchestrator
+            code_orchestrator = integrate_rag_with_agents(agent_manager, search_system)
+            app.code_orchestrator = code_orchestrator
+            
+            # Register code improvement routes
+            register_code_improvement_routes(app)
+            
+            print("🔗 RAG-Agent integration completed - Code improvement system ready")
+        except Exception as e:
+            print(f"⚠️  RAG-Agent integration failed: {e}")
+            app.code_orchestrator = None
+            
     except Exception as e:
         print(f"⚠️  Agent system initialization failed: {e}")
         app.agent_manager = None
+        app.code_orchestrator = None
     
     # Register error handlers
     register_error_handlers(app)
@@ -122,6 +141,11 @@ def register_routes(app: Flask):
     def index():
         """Render the main application page."""
         return render_template('index.html')
+    
+    @app.route('/dashboard')
+    def dashboard():
+        """Render the AI agent dashboard page."""
+        return render_template('agent_dashboard.html')
     
     @app.route('/health')
     def health_check():
@@ -211,6 +235,144 @@ def register_routes(app: Flask):
             current_app.logger.error(f"Upload error: {str(e)}\n{traceback.format_exc()}")
             return jsonify({
                 'error': 'Upload failed',
+                'message': str(e)
+            }), 500
+    
+    @app.route('/api/dashboard/upload', methods=['POST'])
+    def dashboard_upload():
+        """Simplified file upload for dashboard document analysis."""
+        try:
+            if 'file' not in request.files:
+                return jsonify({
+                    'error': 'No file provided',
+                    'message': 'Please select a file to upload.'
+                }), 400
+            
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({
+                    'error': 'No file selected',
+                    'message': 'Please select a file to upload.'
+                }), 400
+            
+            # Get or create default vector store for dashboard uploads
+            vector_stores = app.search_system.list_vector_stores()
+            dashboard_store = None
+            
+            # Look for existing dashboard store
+            for store in vector_stores:
+                if store.get('name') == 'Dashboard_Documents':
+                    dashboard_store = store
+                    break
+            
+            # Create dashboard store if it doesn't exist
+            if not dashboard_store:
+                dashboard_store = app.search_system.create_vector_store('Dashboard_Documents')
+            
+            # Save file temporarily
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join('/tmp', filename)
+            file.save(temp_path)
+            
+            # Upload to vector store
+            result = app.search_system.upload_file(temp_path, dashboard_store['id'])
+            
+            # Clean up temporary file
+            os.unlink(temp_path)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Document uploaded successfully and ready for analysis',
+                'file_id': result.get('id'),
+                'filename': result.get('filename'),
+                'vector_store_id': dashboard_store['id']
+            })
+            
+        except Exception as e:
+            current_app.logger.error(f"Dashboard upload error: {str(e)}\n{traceback.format_exc()}")
+            return jsonify({
+                'error': 'Upload failed',
+                'message': str(e)
+            }), 500
+    
+    @app.route('/api/dashboard/analyze', methods=['POST'])
+    def dashboard_analyze():
+        """Analyze uploaded documents using appropriate AI agents."""
+        try:
+            data = request.get_json()
+            query = data.get('query', '')
+            agent_type = data.get('agent_type', 'research')
+            file_context = data.get('file_context', False)
+            
+            if not query:
+                return jsonify({
+                    'error': 'Query required',
+                    'message': 'Please provide a question or analysis request.'
+                }), 400
+            
+            # Get dashboard vector store for context
+            vector_stores = app.search_system.list_vector_stores()
+            dashboard_store_id = None
+            
+            for store in vector_stores:
+                if store.get('name') == 'Dashboard_Documents':
+                    dashboard_store_id = store['id']
+                    break
+            
+            # If we have documents and file_context is requested, include RAG search
+            context = ""
+            if file_context and dashboard_store_id:
+                try:
+                    # Perform semantic search on uploaded documents
+                    search_results = app.search_system.semantic_search(
+                        dashboard_store_id, query, max_results=5
+                    )
+                    if search_results and hasattr(search_results, 'data'):
+                        context = "\n\nRelevant document context:\n"
+                        for result in search_results.data[:3]:  # Top 3 results
+                            context += f"- {result.content[:200]}...\n"
+                except Exception as search_error:
+                    current_app.logger.warning(f"Context search failed: {search_error}")
+            
+            # Use appropriate agent based on type
+            if not app.agent_manager:
+                return jsonify({
+                    'error': 'Agent system not available',
+                    'message': 'AI agents are not initialized.'
+                }), 503
+            
+            # Prepare enhanced query with context
+            enhanced_query = query + context
+            
+            # Route to appropriate agent
+            agent_mapping = {
+                'research': 'ResearchAgent',
+                'ceo': 'CEOAgent', 
+                'coaching': 'CoachingAgent',
+                'performance': 'PerformanceAgent',
+                'analytics': 'AnalyticsAgent',
+                'triage': 'TriageAgent'
+            }
+            
+            agent_name = agent_mapping.get(agent_type, 'ResearchAgent')
+            
+            # Execute agent
+            result = app.agent_manager.process_request(enhanced_query)
+            
+            return jsonify({
+                'success': True,
+                'query': query,
+                'agent_type': agent_type,
+                'response': result.result if hasattr(result, 'result') else str(result),
+                'agent_name': result.agent_name if hasattr(result, 'agent_name') else agent_name,
+                'execution_time': result.execution_time if hasattr(result, 'execution_time') else 0,
+                'used_file_context': bool(context)
+            })
+            
+        except Exception as e:
+            current_app.logger.error(f"Dashboard analyze error: {str(e)}\n{traceback.format_exc()}")
+            return jsonify({
+                'error': 'Analysis failed',
                 'message': str(e)
             }), 500
     
@@ -357,6 +519,12 @@ def register_routes(app: Flask):
     def analytics_dashboard():
         """Render the analytics dashboard page."""
         return render_template('analytics.html')
+
+    # Code Improvement Dashboard Route
+    @app.route('/code-improvement')
+    def code_improvement_dashboard():
+        """Render the code improvement dashboard page."""
+        return render_template('code_improvement.html')
 
     @app.route('/api/analytics/dashboard')
     def get_analytics_dashboard():

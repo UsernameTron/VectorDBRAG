@@ -9,6 +9,12 @@ from enum import Enum
 
 load_dotenv()
 
+# Model configurations for the unified agent system
+CEO_MODEL = os.getenv("CEO_MODEL", "gpt-4")
+FAST_MODEL = os.getenv("FAST_MODEL", "gpt-3.5-turbo")
+EXECUTOR_MODEL_ORIGINAL = os.getenv("EXECUTOR_MODEL_ORIGINAL", "gpt-4")
+EXECUTOR_MODEL_DISTILLED = os.getenv("EXECUTOR_MODEL_DISTILLED", "gpt-3.5-turbo")
+
 class Environment(str, Enum):
     DEVELOPMENT = "development"
     STAGING = "staging"
