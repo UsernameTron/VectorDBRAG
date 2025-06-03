@@ -5,7 +5,6 @@ import os
 import json
 import traceback
 import asyncio
-import threading
 from typing import Dict, Any
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
@@ -63,21 +62,6 @@ def create_app(config_name: str | None = None) -> Flask:
         print(f"⚠️  Analytics integration failed: {e}")
         app.analytics_integration = None
         app.report_ingestion = None
-    
-    # Initialize agent system
-    try:
-        from unified_agent_system import create_unified_system
-        agent_manager = create_unified_system(search_system, analytics_integration)
-        app.agent_manager = agent_manager
-        
-        # Register agent routes
-        from agent_flask_integration import register_agent_routes
-        register_agent_routes(app)
-        
-        print("✅ Unified agent system initialized with 12 specialized agents")
-    except Exception as e:
-        print(f"⚠️  Agent system initialization failed: {e}")
-        app.agent_manager = None
     
     # Register error handlers
     register_error_handlers(app)
