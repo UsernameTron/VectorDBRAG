@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analytics Dashboard - Unified Meld & RAG System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #10b981;
+            --accent-color: #f59e0b;
+            --background-color: #ffffff;
+            --surface-color: #f8fafc;
+            --card-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #34d399;
+            --accent-color: #fbbf24;
+            --background-color: #0f172a;
+            --surface-color: #1e293b;
+            --card-color: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #475569;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .header {
+            background: var(--card-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-tabs {
+            margin: 0 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-secondary);
+            border: none;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+            border-color: transparent;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-color: transparent;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .metric-change.positive {
+            color: var(--success-color);
+        }
+
+        .metric-change.negative {
+            color: var(--danger-color);
+        }
+
+        .metric-change.neutral {
+            color: var(--text-secondary);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--card-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-chart-control {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            color: var(--text-secondary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-chart-control:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-chart-control.active {
+            color: white;
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .chart-container {
+            height: 400px;
+            width: 100%;
+        }
+
+        .controls-panel {
+            background: var(--card-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--surface-color);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .real-time-panel {
+            background: var(--card-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .real-time-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .real-time-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .real-time-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .real-time-metric {
+            text-align: center;
+            padding: 1rem;
+            background: var(--surface-color);
+            border-radius: 0.5rem;
+        }
+
+        .real-time-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .real-time-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+        }
+
+        .alert-warning {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(217, 119, 6, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .main-container {
+                padding: 1rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <div>
+                    <div class="logo-text">Data Analytics Dashboard</div>
+                    <small class="text-muted">Unified Meld & RAG System</small>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="btn btn-secondary" onclick="refreshDashboard()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Refresh
+                </button>
+                <button class="btn btn-secondary" onclick="exportData()">
+                    <i class="bi bi-download"></i>
+                    Export
+                </button>
+                <button class="btn btn-secondary" onclick="toggleTheme()">
+                    <i class="bi bi-moon-fill" id="themeIcon"></i>
+                </button>
+                <a href="/" class="btn btn-secondary">
+                    <i class="bi bi-house"></i>
+                    Back to Main
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-tab="overview" href="#" onclick="switchTab('overview')">
+                <i class="bi bi-speedometer2"></i> Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-tab="analytics" href="#" onclick="switchTab('analytics')">
+                <i class="bi bi-graph-up"></i> Analytics
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-tab="real-time" href="#" onclick="switchTab('real-time')">
+                <i class="bi bi-lightning-fill"></i> Real-time
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-tab="custom" href="#" onclick="switchTab('custom')">
+                <i class="bi bi-tools"></i> Custom Queries
+            </a>
+        </li>
+    </ul>
+
+    <div class="main-container">
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content">
+            <!-- Metrics Overview -->
+            <div class="metrics-grid" id="metricsGrid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Total Sessions</div>
+                        <div class="metric-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--primary-color);">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="totalSessions">Loading...</div>
+                    <div class="metric-change neutral">
+                        <i class="bi bi-clock"></i>
+                        Today
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Total Interactions</div>
+                        <div class="metric-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--secondary-color);">
+                            <i class="bi bi-chat-dots"></i>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="totalInteractions">Loading...</div>
+                    <div class="metric-change neutral">
+                        <i class="bi bi-clock"></i>
+                        Today
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Avg Response Time</div>
+                        <div class="metric-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-color);">
+                            <i class="bi bi-stopwatch"></i>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="avgResponseTime">Loading...</div>
+                    <div class="metric-change neutral">
+                        <i class="bi bi-graph-up"></i>
+                        Seconds
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Success Rate</div>
+                        <div class="metric-icon" style="background: rgba(5, 150, 105, 0.1); color: var(--success-color);">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="successRate">Loading...</div>
+                    <div class="metric-change neutral">
+                        <i class="bi bi-percent"></i>
+                        Success
+                    </div>
+                </div>
+            </div>
+
+            <!-- Popular Agents -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Most Used Agents Today</div>
+                </div>
+                <div id="popularAgents">
+                    <div class="text-center">
+                        <div class="loading"></div>
+                        <div>Loading popular agents...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content" style="display: none;">
+            <!-- Chart Controls -->
+            <div class="controls-panel">
+                <div class="controls-grid">
+                    <div class="form-group">
+                        <label class="form-label">Time Frame</label>
+                        <select class="form-control" id="timeframeSelect" onchange="updateCharts()">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chart Type</label>
+                        <select class="form-control" id="chartTypeSelect" onchange="updateCharts()">
+                            <option value="activity_timeline">Activity Timeline</option>
+                            <option value="agent_usage">Agent Usage</option>
+                            <option value="response_times">Response Times</option>
+                            <option value="success_rate">Success Rate</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary" onclick="updateCharts()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Update Charts
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title" id="chartTitle">Activity Timeline</div>
+                        <div class="chart-controls">
+                            <button class="btn-chart-control active" data-timeframe="24h">24H</button>
+                            <button class="btn-chart-control" data-timeframe="7d">7D</button>
+                            <button class="btn-chart-control" data-timeframe="30d">30D</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="mainChart">
+                        <div class="text-center" style="padding-top: 150px;">
+                            <div class="loading"></div>
+                            <div>Loading chart data...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Tab -->
+        <div id="real-time-tab" class="tab-content" style="display: none;">
+            <div class="real-time-panel">
+                <div class="real-time-header">
+                    <h5 class="mb-0">System Performance</h5>
+                    <div class="real-time-indicator">
+                        <div class="status-dot"></div>
+                        <span>Live</span>
+                    </div>
+                </div>
+                <div class="real-time-metrics" id="realTimeMetrics">
+                    <div class="real-time-metric">
+                        <div class="real-time-value" id="cpuUsage">0%</div>
+                        <div class="real-time-label">CPU Usage</div>
+                    </div>
+                    <div class="real-time-metric">
+                        <div class="real-time-value" id="memoryUsage">0%</div>
+                        <div class="real-time-label">Memory Usage</div>
+                    </div>
+                    <div class="real-time-metric">
+                        <div class="real-time-value" id="diskUsage">0%</div>
+                        <div class="real-time-label">Disk Usage</div>
+                    </div>
+                    <div class="real-time-metric">
+                        <div class="real-time-value" id="activeSessions">0</div>
+                        <div class="real-time-label">Active Sessions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Real-time metrics update every 5 seconds. Data reflects current system performance.
+            </div>
+        </div>
+
+        <!-- Custom Queries Tab -->
+        <div id="custom-tab" class="tab-content" style="display: none;">
+            <div class="controls-panel">
+                <h5 class="mb-3">Custom Analytics Query</h5>
+                <div class="controls-grid">
+                    <div class="form-group">
+                        <label class="form-label">Query Type</label>
+                        <select class="form-control" id="queryType">
+                            <option value="agent_performance">Agent Performance</option>
+                            <option value="user_patterns">User Activity Patterns</option>
+                            <option value="custom">Custom Query</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Time Range</label>
+                        <select class="form-control" id="queryTimeframe">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary" onclick="executeCustomQuery()">
+                            <i class="bi bi-play-fill"></i>
+                            Execute Query
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Query Results</div>
+                    <button class="btn btn-secondary" onclick="exportQueryResults()">
+                        <i class="bi bi-download"></i>
+                        Export Results
+                    </button>
+                </div>
+                <div id="queryResults">
+                    <div class="text-center text-muted" style="padding: 2rem;">
+                        Execute a query to see results here
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global state
+        let currentTab = 'overview';
+        let realTimeInterval = null;
+        let overviewData = {};
+        let queryResults = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            setupEventListeners();
+        });
+
+        function initializeDashboard() {
+            loadOverviewData();
+            updateTheme();
+        }
+
+        function setupEventListeners() {
+            // Chart control buttons
+            document.querySelectorAll('.btn-chart-control').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.btn-chart-control').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    updateCharts();
+                });
+            });
+        }
+
+        function switchTab(tabName) {
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Show/hide content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(`${tabName}-tab`).style.display = 'block';
+
+            currentTab = tabName;
+
+            // Load tab-specific data
+            switch(tabName) {
+                case 'overview':
+                    loadOverviewData();
+                    break;
+                case 'analytics':
+                    updateCharts();
+                    break;
+                case 'real-time':
+                    startRealTimeUpdates();
+                    break;
+                case 'custom':
+                    stopRealTimeUpdates();
+                    break;
+                default:
+                    stopRealTimeUpdates();
+            }
+        }
+
+        async function loadOverviewData() {
+            try {
+                const response = await fetch('/api/analytics/overview');
+                const data = await response.json();
+
+                if (data.success) {
+                    overviewData = data.data;
+                    updateOverviewMetrics();
+                    updatePopularAgents();
+                } else {
+                    console.error('Failed to load overview data:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading overview data:', error);
+            }
+        }
+
+        function updateOverviewMetrics() {
+            document.getElementById('totalSessions').textContent = overviewData.total_sessions || 0;
+            document.getElementById('totalInteractions').textContent = overviewData.total_interactions || 0;
+            document.getElementById('avgResponseTime').textContent = (overviewData.avg_response_time || 0).toFixed(3) + 's';
+            document.getElementById('successRate').textContent = (overviewData.success_rate || 0).toFixed(1) + '%';
+        }
+
+        function updatePopularAgents() {
+            const container = document.getElementById('popularAgents');
+            const agents = overviewData.popular_agents || [];
+
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted">No agent data available</div>';
+                return;
+            }
+
+            const html = agents.map((agent, index) => `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: var(--surface-color);">
+                    <div>
+                        <span class="badge bg-primary me-2">${index + 1}</span>
+                        <strong>${agent.agent_type || 'Unknown'}</strong>
+                    </div>
+                    <span class="text-muted">${agent.usage_count} uses</span>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        async function updateCharts() {
+            const chartType = document.getElementById('chartTypeSelect')?.value || 'activity_timeline';
+            const timeframe = document.querySelector('.btn-chart-control.active')?.dataset.timeframe || '24h';
+            
+            const chartContainer = document.getElementById('mainChart');
+            chartContainer.innerHTML = `
+                <div class="text-center" style="padding-top: 150px;">
+                    <div class="loading"></div>
+                    <div>Loading chart data...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/analytics/charts/${chartType}?timeframe=${timeframe}`);
+                const data = await response.json();
+
+                if (data.success && data.data.chart) {
+                    const plotData = JSON.parse(data.data.chart);
+                    Plotly.newPlot('mainChart', plotData.data, plotData.layout, {
+                        responsive: true,
+                        displayModeBar: false
+                    });
+                } else {
+                    chartContainer.innerHTML = `
+                        <div class="text-center text-muted" style="padding-top: 150px;">
+                            <i class="bi bi-exclamation-circle" style="font-size: 2rem;"></i>
+                            <div>No data available for selected timeframe</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading chart data:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center text-danger" style="padding-top: 150px;">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <div>Error loading chart data</div>
+                    </div>
+                `;
+            }
+        }
+
+        function startRealTimeUpdates() {
+            if (realTimeInterval) clearInterval(realTimeInterval);
+            
+            updateRealTimeMetrics(); // Initial load
+            realTimeInterval = setInterval(updateRealTimeMetrics, 5000); // Update every 5 seconds
+        }
+
+        function stopRealTimeUpdates() {
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+                realTimeInterval = null;
+            }
+        }
+
+        async function updateRealTimeMetrics() {
+            try {
+                const response = await fetch('/api/analytics/real-time');
+                const data = await response.json();
+
+                if (data.success) {
+                    const metrics = data.data;
+                    document.getElementById('cpuUsage').textContent = metrics.cpu_usage.toFixed(1) + '%';
+                    document.getElementById('memoryUsage').textContent = metrics.memory_usage.toFixed(1) + '%';
+                    document.getElementById('diskUsage').textContent = metrics.disk_usage.toFixed(1) + '%';
+                    document.getElementById('activeSessions').textContent = metrics.active_sessions || 0;
+                }
+            } catch (error) {
+                console.error('Error updating real-time metrics:', error);
+            }
+        }
+
+        async function executeCustomQuery() {
+            const queryType = document.getElementById('queryType').value;
+            const timeframe = document.getElementById('queryTimeframe').value;
+            
+            const resultsContainer = document.getElementById('queryResults');
+            resultsContainer.innerHTML = `
+                <div class="text-center" style="padding: 2rem;">
+                    <div class="loading"></div>
+                    <div>Executing query...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/analytics/custom-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: queryType,
+                        timeframe: timeframe
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    queryResults = data.data;
+                    displayQueryResults(queryResults);
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Query failed: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error executing query:', error);
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Error executing query: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayQueryResults(results) {
+            const container = document.getElementById('queryResults');
+            
+            if (!results.data || results.data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted" style="padding: 2rem;">
+                        <i class="bi bi-database"></i>
+                        <div>No results found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Create table
+            const columns = results.columns || Object.keys(results.data[0]);
+            let html = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i>
+                    Query executed successfully. Found ${results.row_count} rows.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                ${columns.map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Show first 100 rows
+            const displayData = results.data.slice(0, 100);
+            html += displayData.map(row => {
+                return `<tr>${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}</tr>`;
+            }).join('');
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            if (results.data.length > 100) {
+                html += `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Showing first 100 of ${results.data.length} results. Export to see all data.
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        async function exportData() {
+            const format = 'json'; // Could be made configurable
+            const timeframe = '7d'; // Could be made configurable
+            
+            try {
+                const response = await fetch(`/api/analytics/export/${format}?timeframe=${timeframe}&type=all`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const blob = new Blob([data.data.data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.data.filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('Export failed. Please try again.');
+            }
+        }
+
+        function exportQueryResults() {
+            if (!queryResults) {
+                alert('No query results to export');
+                return;
+            }
+
+            const data = JSON.stringify(queryResults, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `query_results_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function refreshDashboard() {
+            switch(currentTab) {
+                case 'overview':
+                    loadOverviewData();
+                    break;
+                case 'analytics':
+                    updateCharts();
+                    break;
+                case 'real-time':
+                    updateRealTimeMetrics();
+                    break;
+                case 'custom':
+                    // Custom queries don't auto-refresh
+                    break;
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            
+            const icon = document.getElementById('themeIcon');
+            icon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+            
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function updateTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+            }
+        }
+
+        // Clean up intervals when page unloads
+        window.addEventListener('beforeunload', function() {
+            stopRealTimeUpdates();
+        });
+    </script>
+</body>
+</html>

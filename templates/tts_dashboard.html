@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Text-to-Speech - Unified Meld & RAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Unified Meld & RAG</a>
+    <div class="d-flex">
+      <a href="/" class="btn btn-outline-primary me-2">
+        <i class="bi bi-chat-dots"></i> Chat
+      </a>
+      <a href="/tts" class="btn btn-primary">
+        <i class="bi bi-mic-fill"></i> Text-to-Speech
+      </a>
+    </div>
+  </div>
+</nav>
+<div class="container py-4">
+  <h1 class="mb-4">🎤 Text-to-Speech Generator</h1>
+  <div class="card">
+    <div class="card-body">
+      <form id="ttsForm">
+        <div class="mb-3">
+          <label for="ttsText" class="form-label">Enter text (max 4096 chars)</label>
+          <textarea class="form-control" id="ttsText" rows="4" maxlength="4096"></textarea>
+          <div id="charCount" class="form-text text-muted">0/4096 characters</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="ttsModel" class="form-label">Model</label>
+            <select id="ttsModel" class="form-select">
+              {% for model in models %}
+              <option value="{{ model }}">{{ model }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="ttsVoice" class="form-label">Voice</label>
+            <select id="ttsVoice" class="form-select">
+              {% for voice in voices %}
+              <option value="{{ voice }}">{{ voice }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="ttsFormat" class="form-label">Format</label>
+            <select id="ttsFormat" class="form-select">
+              {% for fmt in formats %}
+              <option value="{{ fmt }}">{{ fmt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="ttsSpeed" class="form-label">Speed: <span id="speedValue">1.0x</span></label>
+            <input type="range" id="ttsSpeed" class="form-range" min="0.25" max="4.0" step="0.05" value="1.0">
+          </div>
+          <div class="col-md-6 d-none" id="instructionsSection">
+            <label for="ttsInstructions" class="form-label">Instructions (gpt-4o-mini-tts only)</label>
+            <textarea class="form-control" id="ttsInstructions" rows="2"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Speech</button>
+      </form>
+      <div id="ttsResponse" class="mt-4"></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Character count for text area
+const textArea = document.getElementById('ttsText');
+textArea.addEventListener('input', () => {
+  const len = textArea.value.length;
+  document.getElementById('charCount').textContent = `${len}/4096 characters`;
+});
+
+// Speed display
+const speedInput = document.getElementById('ttsSpeed');
+speedInput.addEventListener('input', (e) => {
+  document.getElementById('speedValue').textContent = `${e.target.value}x`;
+});
+
+// Show instructions only for gpt-4o-mini-tts
+const modelSelect = document.getElementById('ttsModel');
+modelSelect.addEventListener('change', (e) => {
+  document.getElementById('instructionsSection').classList.toggle(
+    'd-none',
+    e.target.value !== 'gpt-4o-mini-tts'
+  );
+});
+
+// Handle form submission
+document.getElementById('ttsForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {
+    text: textArea.value,
+    model: modelSelect.value,
+    voice: document.getElementById('ttsVoice').value,
+    response_format: document.getElementById('ttsFormat').value,
+    instructions: document.getElementById('ttsInstructions').value,
+    speed: parseFloat(speedInput.value)
+  };
+  document.getElementById('ttsResponse').innerHTML =
+    '<div class="spinner-border" role="status"><span class="visually-hidden">Generating...</span></div>';
+  const resp = await fetch('/api/tts/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const result = await resp.json();
+  if (result.success) {
+    document.getElementById('ttsResponse').innerHTML = `
+      <h5>Generated Speech</h5>
+      <audio controls src="data:audio/${result.format};base64,${result.audio_b64}"></audio>
+      <div class="mt-2">
+        <a href="data:audio/${result.format};base64,${result.audio_b64}" download="${result.filename}" class="btn btn-link">Download Audio</a>
+      </div>
+    `;
+  } else {
+    document.getElementById('ttsResponse').innerHTML =
+      `<div class="alert alert-danger">Error: ${result.error}</div>`;
+  }
+});
+</script>
+</body>
+</html>

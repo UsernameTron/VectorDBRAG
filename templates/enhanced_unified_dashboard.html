@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced VectorDBRAG Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent: #00d4ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --dark: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-card: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        /* Glassmorphism Container */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 40px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: var(--primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+            position: relative;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--success);
+            opacity: 0.3;
+            top: -4px;
+            left: -4px;
+            animation: ping 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes ping {
+            0% { transform: scale(1); opacity: 0.3; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 350px 1fr 300px;
+            gap: 20px;
+            padding: 20px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 25px;
+            height: fit-content;
+            position: sticky;
+            top: 120px;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .agent-card {
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .agent-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .agent-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent);
+        }
+
+        .agent-card.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(102, 126, 234, 0.2));
+            border-color: var(--accent);
+        }
+
+        .agent-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .agent-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Chat Area */
+        .chat-container {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 140px);
+        }
+
+        .chat-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px 20px;
+            max-width: 70%;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: var(--primary);
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 15px 20px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: typing 1.5s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        /* Input Area */
+        .chat-input {
+            padding: 20px 25px;
+            border-top: 1px solid var(--border);
+            background: var(--glass);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            background: var(--dark-surface);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px 20px;
+            color: var(--text);
+            resize: none;
+            max-height: 150px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .send-btn {
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Knowledge Base */
+        .kb-item {
+            background: var(--dark-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .kb-item:hover {
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+
+        .kb-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .kb-docs {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Performance Metrics */
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        /* File Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 300px 1fr 250px;
+                padding: 15px 20px;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .sidebar, .right-panel {
+                position: static;
+            }
+            
+            .agent-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 15px 20px;
+            }
+            
+            .main-container {
+                padding: 10px 15px;
+            }
+            
+            .agent-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 8px;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .loading { opacity: 0.7; pointer-events: none; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">VectorDBRAG AI</div>
+            <div class="status-indicators">
+                <div class="status-dot" title="System Health"></div>
+                <span class="text-sm text-muted">12 Agents Online</span>
+                <div class="status-dot" title="Vector DB"></div>
+                <span class="text-sm text-muted">OpenAI Connected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar - Agent Selection -->
+        <aside class="sidebar">
+            <h2 class="section-title">🤖 AI Agents</h2>
+            <div class="agent-grid">
+                <div class="agent-card active" data-agent="research">
+                    <div class="agent-icon">🔍</div>
+                    <div class="agent-name">Research</div>
+                </div>
+                <div class="agent-card" data-agent="ceo">
+                    <div class="agent-icon">👔</div>
+                    <div class="agent-name">CEO</div>
+                </div>
+                <div class="agent-card" data-agent="performance">
+                    <div class="agent-icon">📊</div>
+                    <div class="agent-name">Performance</div>
+                </div>
+                <div class="agent-card" data-agent="code_analyzer">
+                    <div class="agent-icon">💻</div>
+                    <div class="agent-name">Code Analyzer</div>
+                </div>
+                <div class="agent-card" data-agent="code_debugger">
+                    <div class="agent-icon">🐛</div>
+                    <div class="agent-name">Debugger</div>
+                </div>
+                <div class="agent-card" data-agent="triage">
+                    <div class="agent-icon">🎯</div>
+                    <div class="agent-name">Triage</div>
+                </div>
+                <div class="agent-card" data-agent="image">
+                    <div class="agent-icon">🖼️</div>
+                    <div class="agent-name">Image</div>
+                </div>
+                <div class="agent-card" data-agent="audio">
+                    <div class="agent-icon">🎵</div>
+                    <div class="agent-name">Audio</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container">
+            <div class="chat-header">
+                <h2>💬 Chat with Research Agent</h2>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-muted">Knowledge Base: ON</span>
+                    <button class="send-btn" style="width: 40px; height: 40px;">🎤</button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p>Hello! I'm your Research Agent. I can help you analyze data, research topics, and provide insights using your knowledge base. What would you like to explore today?</p>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <div class="input-container">
+                    <textarea 
+                        class="input-field" 
+                        placeholder="Ask me anything... I have access to your knowledge base and can research any topic."
+                        rows="1"
+                        id="messageInput"
+                    ></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Knowledge Base -->
+            <div class="panel-section">
+                <h3 class="section-title">📚 Knowledge Base</h3>
+                <div class="kb-item">
+                    <div class="kb-name">Business Analytics</div>
+                    <div class="kb-docs">47 documents</div>
+                </div>
+                <div class="kb-item">
+                    <div class="kb-name">Technical Docs</div>
+                    <div class="kb-docs">23 documents</div>
+                </div>
+                <div class="kb-item">
+                    <div class="kb-name">Research Papers</div>
+                    <div class="kb-docs">15 documents</div>
+                </div>
+            </div>
+
+            <!-- Performance -->
+            <div class="panel-section">
+                <h3 class="section-title">⚡ Performance</h3>
+                <div class="metric">
+                    <span class="metric-label">Response Time</span>
+                    <span class="metric-value">1.2s</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Success Rate</span>
+                    <span class="metric-value">98.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Queries Today</span>
+                    <span class="metric-value">247</span>
+                </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="panel-section">
+                <h3 class="section-title">📁 Upload Documents</h3>
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 24px; margin-bottom: 10px;">📤</div>
+                    <div>Drop files here or click to upload</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
+                        PDF, DOCX, TXT supported
+                    </div>
+                </div>
+                <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.docx,.txt">
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Three.js animated background
+        function initBackground() {
+            const container = document.getElementById('bgAnimation');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Create floating particles
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const colors = [];
+
+            for (let i = 0; i < 500; i++) {
+                vertices.push(
+                    Math.random() * 2000 - 1000,
+                    Math.random() * 2000 - 1000,
+                    Math.random() * 2000 - 1000
+                );
+
+                const color = new THREE.Color();
+                color.setHSL(Math.random() * 0.3 + 0.5, 0.7, 0.5);
+                colors.push(color.r, color.g, color.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({ size: 3, vertexColors: true });
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            camera.position.z = 1000;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.001;
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Agent selection
+        document.querySelectorAll('.agent-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                
+                const agentType = this.dataset.agent;
+                const agentName = this.querySelector('.agent-name').textContent;
+                document.querySelector('.chat-header h2').textContent = `💬 Chat with ${agentName} Agent`;
+            });
+        });
+
+        // Auto-resize textarea
+        const messageInput = document.getElementById('messageInput');
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Send message function
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Simulate AI response (replace with actual API call)
+            setTimeout(() => {
+                hideTypingIndicator();
+                addMessage("I understand your query. Let me research this for you using the available knowledge base and provide you with comprehensive insights.", 'assistant');
+            }, 2000);
+        }
+
+        function addMessage(content, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = sender === 'user' ? '👤' : '🤖';
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <p>${content}</p>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message typing-message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingMessage = document.querySelector('.typing-message');
+            if (typingMessage) {
+                typingMessage.remove();
+            }
+        }
+
+        // Enter key to send
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // File upload handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.querySelector('.upload-zone');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('dragover'), false);
+        });
+
+        uploadZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                console.log('Uploading:', file.name);
+                // Add actual upload logic here
+            });
+        }
+
+        // Initialize
+        initBackground();
+    </script>
+</body>
+</html>

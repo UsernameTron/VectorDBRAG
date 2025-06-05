@@ -13,12 +13,12 @@ from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Local imports from existing systems
-from agents import (
+from legacy_agents import (
     Agent, ExecutorWithFallback, TestGeneratorAgent, ImageAgent, AudioAgent,
     CodeAnalyzerAgent, CodeDebuggerAgent, CodeRepairAgent, PerformanceProfilerAgent,
     CEOAgent, ResearchAgent, PerformanceAgent, CoachingAgent
 )
-from agents import TriageAgent as AgentTriageAgent
+from legacy_agents import TriageAgent as AgentTriageAgent
 from config import CEO_MODEL, FAST_MODEL, EXECUTOR_MODEL_ORIGINAL, EXECUTOR_MODEL_DISTILLED
 from vector_memory_text import vector_memory
 
@@ -222,6 +222,85 @@ class UnifiedAgentManager:
                 error=str(e)
             )
     
+    def process_task(self, task: AgentTask) -> AgentResponse:
+        """Process a structured AgentTask through the unified agent system."""
+        start_time = time.time()
+        
+        try:
+            # Get the appropriate agent for the task
+            primary_agent = self.agents.get(task.agent_type)
+            if not primary_agent:
+                # Fallback to executor if specific agent not available
+                primary_agent = self.agents.get(AgentType.EXECUTOR)
+            
+            if not primary_agent:
+                raise Exception(f"No agent available for task type: {task.agent_type}")
+            
+            # Store task in active tasks
+            self.active_tasks[task.id] = task
+            
+            # Execute task based on agent capabilities
+            if hasattr(primary_agent, 'run'):
+                result = primary_agent.run(task.content)
+            elif hasattr(primary_agent, 'execute'):
+                # Try async execute method
+                import asyncio
+                if asyncio.iscoroutinefunction(primary_agent.execute):
+                    # Run async method
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        exec_response = loop.run_until_complete(primary_agent.execute({"content": task.content}))
+                        result = exec_response.result if hasattr(exec_response, 'result') else str(exec_response)
+                    finally:
+                        loop.close()
+                else:
+                    exec_response = primary_agent.execute({"content": task.content})
+                    result = exec_response.result if hasattr(exec_response, 'result') else str(exec_response)
+            else:
+                result = f"Agent {primary_agent.name} processed: {task.content}"
+            
+            execution_time = time.time() - start_time
+            
+            # Create response
+            response = AgentResponse(
+                task_id=task.id,
+                agent_name=getattr(primary_agent, 'name', str(task.agent_type.value)),
+                result=result,
+                success=True,
+                execution_time=execution_time,
+                metadata={
+                    "agent_type": task.agent_type.value,
+                    "complexity": task.complexity.value,
+                    "context": task.context
+                }
+            )
+            
+            # Move task to completed
+            self.completed_tasks[task.id] = response
+            if task.id in self.active_tasks:
+                del self.active_tasks[task.id]
+            
+            return response
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            error_response = AgentResponse(
+                task_id=task.id,
+                agent_name="System",
+                result="",
+                success=False,
+                execution_time=execution_time,
+                error=str(e)
+            )
+            
+            # Move task to completed with error
+            self.completed_tasks[task.id] = error_response
+            if task.id in self.active_tasks:
+                del self.active_tasks[task.id]
+            
+            return error_response
+
     def get_agent_status(self) -> Dict[str, Any]:
         """Get status of all agents and system health."""
         status = {

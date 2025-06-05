@@ -487,9 +487,9 @@ def register_agent_routes(app: Flask):
             # Add to knowledge base
             success = rag_system.add_document(
                 content=content,
-                source=file.filename,
+                source=file.filename or 'uploaded_file',
                 metadata={
-                    'filename': file.filename,
+                    'filename': file.filename or 'unknown',
                     'type': 'uploaded_file',
                     'size': len(content)
                 }
@@ -644,7 +644,212 @@ def register_agent_routes(app: Flask):
             'total_agents': sum(len(category) for category in agent_info.values())
         })
     
+    # Text-to-Speech Routes
+    
+    @app.route('/tts')
+    def tts_dashboard():
+        """Render the TTS dashboard page."""
+        # Import TTS service to get configuration
+        try:
+            from services.tts_service import TTSService as ComprehensiveTTSService
+            
+            # Create an instance to access class variables properly
+            tts_service = ComprehensiveTTSService()
+            voices_dict = getattr(ComprehensiveTTSService, 'VOICES', {})
+            formats_list = getattr(ComprehensiveTTSService, 'FORMATS', [])
+            
+            return render_template('tts_dashboard.html',
+                models=['tts-1', 'tts-1-hd'],
+                voices=list(voices_dict.keys()) if voices_dict else ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'],
+                formats=formats_list if formats_list else ['mp3', 'opus', 'aac', 'flac']
+            )
+        except Exception as e:
+            return render_template('tts_dashboard.html',
+                models=['tts-1', 'tts-1-hd'],
+                voices=['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'],
+                formats=['mp3', 'opus', 'aac', 'flac']
+            )
+    
+    @app.route('/api/tts/generate', methods=['POST'])
+    @agent_error_handler
+    def generate_tts():
+        """Generate text-to-speech audio using OpenAI TTS."""
+        try:
+            from services.tts_service import TTSService as ComprehensiveTTSService
+            
+            data = request.get_json()
+            if not data or 'text' not in data:
+                return jsonify({'error': 'Text is required'}), 400
+            
+            # Initialize TTS service
+            tts_service = ComprehensiveTTSService()
+            
+            # Extract parameters
+            text = data['text']
+            model = data.get('model', 'tts-1')
+            voice = data.get('voice', 'alloy')
+            response_format = data.get('response_format', 'mp3')
+            speed = data.get('speed', 1.0)
+            instructions = data.get('instructions', '')
+            
+            # Generate speech with proper parameter mapping
+            result = tts_service.generate_speech(
+                text=text,
+                voice=voice,
+                speed=speed,
+                format=response_format
+            )
+            
+            if result['success']:
+                # Read the audio file and convert to base64
+                import base64
+                import os
+                
+                file_path = result['file_path']
+                try:
+                    with open(file_path, 'rb') as audio_file:
+                        audio_content = audio_file.read()
+                    
+                    audio_b64 = base64.b64encode(audio_content).decode('utf-8')
+                    
+                    # Clean up temporary file
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    
+                    return jsonify({
+                        'success': True,
+                        'audio_b64': audio_b64,
+                        'format': result['format_used'],
+                        'filename': f"tts_{result['voice_used']}_{result['timestamp'].replace(':', '-').replace('.', '-')}.{result['format_used']}",
+                        'file_size': result['file_size'],
+                        'duration_estimate': result.get('duration_estimate'),
+                        'voice_used': result.get('voice_used', voice),
+                        'speed_used': result.get('speed_used', speed),
+                        'timestamp': result.get('timestamp')
+                    })
+                    
+                except Exception as file_error:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Failed to process audio file: {str(file_error)}'
+                    }), 500
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': result.get('error', 'Unknown error')
+                }), 400
+                
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'TTS service not available - please check installation'
+            }), 500
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'TTS generation failed: {str(e)}'
+            }), 500
+    
+    @app.route('/api/tts/voices')
+    def get_tts_voices():
+        """Get available TTS voices with descriptions."""
+        try:
+            # Updated with all 9 supported OpenAI TTS voices
+            voices_dict = {
+                'alloy': {'description': 'Balanced, neutral voice', 'gender': 'neutral'},
+                'ash': {'description': 'Clear, professional tone ideal for business', 'gender': 'neutral'},
+                'coral': {'description': 'Friendly, approachable voice for conversations', 'gender': 'female'},
+                'echo': {'description': 'Warm, expressive voice', 'gender': 'neutral'},
+                'fable': {'description': 'Clear, articulate voice', 'gender': 'neutral'},
+                'nova': {'description': 'Bright, energetic voice', 'gender': 'female'},
+                'onyx': {'description': 'Deep, resonant voice', 'gender': 'male'},
+                'sage': {'description': 'Wise, measured voice ideal for educational content', 'gender': 'neutral'},
+                'shimmer': {'description': 'Smooth, pleasant voice', 'gender': 'female'}
+            }
+            return jsonify({
+                'voices': voices_dict,
+                'total': len(voices_dict)
+            })
+        except Exception as e:
+            return jsonify({
+                'voices': {
+                    'alloy': {'description': 'Balanced, neutral voice', 'gender': 'neutral'},
+                    'ash': {'description': 'Clear, professional tone ideal for business', 'gender': 'neutral'},
+                    'coral': {'description': 'Friendly, approachable voice for conversations', 'gender': 'female'},
+                    'echo': {'description': 'Warm, expressive voice', 'gender': 'neutral'},
+                    'fable': {'description': 'Clear, articulate voice', 'gender': 'neutral'},
+                    'nova': {'description': 'Bright, energetic voice', 'gender': 'female'},
+                    'onyx': {'description': 'Deep, resonant voice', 'gender': 'male'},
+                    'sage': {'description': 'Wise, measured voice ideal for educational content', 'gender': 'neutral'},
+                    'shimmer': {'description': 'Smooth, pleasant voice', 'gender': 'female'}
+                },
+                'total': 9
+            })
+    
+    @app.route('/api/tts/analyze', methods=['POST'])
+    @agent_error_handler
+    def analyze_tts_text():
+        """Analyze text before TTS generation using agent system."""
+        try:
+            data = request.get_json()
+            if not data or 'text' not in data:
+                return jsonify({'error': 'Text is required'}), 400
+            
+            text = data['text']
+            
+            # Simple text analysis without agent dependency
+            analysis = {
+                'word_count': len(text.split()),
+                'character_count': len(text),
+                'estimated_duration': len(text) * 0.1,  # rough estimate
+                'recommendations': [],
+                'optimized_text': text
+            }
+            
+            # Add recommendations based on text characteristics
+            if len(text) > 4000:
+                analysis['recommendations'].append('Text is quite long, consider breaking into smaller chunks')
+            if len(text.split()) < 5:
+                analysis['recommendations'].append('Very short text - consider adding more content')
+            
+            return jsonify({
+                'analysis': analysis,
+                'recommendations': analysis['recommendations'],
+                'optimized_text': analysis['optimized_text']
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'error': f'Text analysis failed: {str(e)}'
+            }), 500
+    
+    @app.route('/api/tts/status')
+    def tts_status():
+        """Get TTS service status and configuration."""
+        try:
+            # Check if OpenAI API key is available
+            import os
+            api_key_available = bool(os.getenv('OPENAI_API_KEY'))
+            
+            return jsonify({
+                'status': 'available' if api_key_available else 'no_api_key',
+                'models': ['tts-1', 'tts-1-hd'],
+                'voices': ['alloy', 'ash', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer'],
+                'formats': ['mp3', 'opus', 'aac', 'flac'],
+                'speed_range': [0.25, 4.0],
+                'max_text_length': 4096,
+                'agent_integration': True,
+                'api_key_configured': api_key_available
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'status': 'service_unavailable',
+                'error': f'TTS service error: {str(e)}'
+            }), 500
+
     # Health check for agent system
+    
     @app.route('/api/agents/health')
     def agent_health_check():
         """Health check specifically for the agent system."""

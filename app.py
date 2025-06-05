@@ -74,7 +74,15 @@ def create_app(config_name: str | None = None) -> Flask:
         from agent_flask_integration import register_agent_routes
         register_agent_routes(app)
         
-        print("✅ Unified agent system initialized with 12 specialized agents")
+        # Register enhanced agent routes using the shared framework
+        try:
+            from enhanced_agent_integration import register_enhanced_agent_routes
+            register_enhanced_agent_routes(app)
+            print("✅ Enhanced agent system initialized with shared framework")
+            print("✅ Unified agent system initialized with 12 specialized agents")
+        except Exception as e:
+            print(f"⚠️  Enhanced agent integration failed: {e}")
+            app.enhanced_agent_integration = None
         
         # Initialize RAG-Agent integration for code improvement
         try:
@@ -97,6 +105,14 @@ def create_app(config_name: str | None = None) -> Flask:
         print(f"⚠️  Agent system initialization failed: {e}")
         app.agent_manager = None
         app.code_orchestrator = None
+    
+    # Initialize advanced OpenAI features
+    try:
+        from services.advanced_openai_routes import register_advanced_openai_routes
+        register_advanced_openai_routes(app)
+        print("🔮 Advanced OpenAI features initialized (Vision, Structured Outputs, Real-time, Batch Processing)")
+    except Exception as e:
+        print(f"⚠️  Advanced OpenAI features initialization failed: {e}")
     
     # Register error handlers
     register_error_handlers(app)
@@ -143,6 +159,14 @@ def register_routes(app: Flask):
         return render_template('index.html')
     
     @app.route('/dashboard')
+    def dashboard():
+        """Render the AI agent dashboard page."""
+        return render_template('agent_dashboard.html')
+    
+    @app.route('/advanced-openai')
+    def advanced_openai():
+        """Render the advanced OpenAI features page."""
+        return render_template('advanced_openai.html')
     def dashboard():
         """Render the AI agent dashboard page."""
         return render_template('agent_dashboard.html')
