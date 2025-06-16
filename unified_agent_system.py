@@ -11,6 +11,11 @@ from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import sys
+
+# Add current directory to path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 # Local imports from existing systems
 from legacy_agents import (
@@ -19,6 +24,7 @@ from legacy_agents import (
     CEOAgent, ResearchAgent, PerformanceAgent, CoachingAgent
 )
 from legacy_agents import TriageAgent as AgentTriageAgent
+from config import CEO_MODEL, FAST_MODEL, EXECUTOR_MODEL_ORIGINAL, EXECUTOR_MODEL_DISTILLED
 from config import CEO_MODEL, FAST_MODEL, EXECUTOR_MODEL_ORIGINAL, EXECUTOR_MODEL_DISTILLED
 from vector_memory_text import vector_memory
 

@@ -21,6 +21,13 @@ from .enhanced_agents import (
     TriageAgent
 )
 
+# Import brand agents
+from .brand_agents import (
+    BrandDeconstructionAgent,
+    GPTImageGenerationAgent,
+    BrandIntelligenceAgent
+)
+
 # Import the OpenAI client from original VectorDBRAG setup
 try:
     from openai import OpenAI
@@ -75,6 +82,11 @@ class EnhancedAgentFactory:
         self.factory.register_agent("research", ResearchAgent)
         self.factory.register_agent("image", ImageAgent)
         self.factory.register_agent("audio", AudioAgent)
+        
+        # Brand agents
+        self.factory.register_agent("brand_deconstruction", BrandDeconstructionAgent)
+        self.factory.register_agent("gpt_image_generation", GPTImageGenerationAgent)
+        self.factory.register_agent("brand_intelligence", BrandIntelligenceAgent)
     
     def create_agent(self, agent_type: str, name: Optional[str] = None,
                      config: Optional[Dict[str, Any]] = None) -> Any:

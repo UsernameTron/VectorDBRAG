@@ -398,6 +398,60 @@
             margin-top: 4px;
         }
 
+        /* Voice Configuration */
+        .voice-config {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .form-select {
+            background: var(--dark-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        .form-select:hover {
+            border-color: var(--accent);
+        }
+
+        .voice-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            color: var(--success);
+            font-size: 10px;
+        }
+
         /* Performance Metrics */
         .metric {
             display: flex;
@@ -616,6 +670,60 @@
                 </div>
             </div>
 
+            <!-- Voice Configuration -->
+            <div class="panel-section">
+                <h3 class="section-title">🎭 Voice Configuration</h3>
+                <div class="voice-config">
+                    <div class="form-group">
+                        <label for="voiceProfile" class="form-label">Voice Profile</label>
+                        <select id="voiceProfile" class="form-select">
+                            <option value="default">Default</option>
+                            <option value="satirical">Satirical Voice</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="satiricalControls" style="display: none;">
+                        <label for="satiricalTarget" class="form-label">Target</label>
+                        <select id="satiricalTarget" class="form-select">
+                            <option value="corporate">Corporate Nonsense</option>
+                            <option value="tech">Tech Hype</option>
+                            <option value="politics">Political Theatre</option>
+                            <option value="academia">Academic Jargon</option>
+                            <option value="consumer">Consumer Culture</option>
+                            <option value="self-help">Self-Help Snake Oil</option>
+                            <option value="media">Media Clownery</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="satireModeGroup" style="display: none;">
+                        <label for="satireModes" class="form-label">Intensity</label>
+                        <select id="satireModes" class="form-select">
+                            <option value="strategic-snark">Strategic Snark</option>
+                            <option value="high-satire">Unfiltered Venom</option>
+                            <option value="soft-roast">Light Toasting</option>
+                            <option value="deadpan">Deadpan Derailment</option>
+                            <option value="socratic">Dumb-On-Purpose</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="voiceStyleGroup" style="display: none;">
+                        <label for="voiceStyle" class="form-label">Style</label>
+                        <select id="voiceStyle" class="form-select">
+                            <option value="caustic">Caustic Observer</option>
+                            <option value="eloquent">Eloquent Sophisticate</option>
+                            <option value="folksy">Folksy Truth-teller</option>
+                            <option value="analytical">Pseudo-Analytical</option>
+                            <option value="insider">Jaded Insider</option>
+                        </select>
+                    </div>
+                    
+                    <div class="voice-status">
+                        <span class="status-indicator">●</span>
+                        <span id="voiceStatusText">Default Voice Active</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Performance -->
             <div class="panel-section">
                 <h3 class="section-title">⚡ Performance</h3>
@@ -736,11 +844,41 @@
             // Show typing indicator
             showTypingIndicator();
 
-            // Simulate AI response (replace with actual API call)
-            setTimeout(() => {
+            // Prepare message with voice configuration
+            const messageData = {
+                message: message,
+                voice_config: currentVoiceConfig,
+                agent_type: getSelectedAgent(),
+                use_knowledge_base: true
+            };
+
+            // Send to backend with voice configuration
+            fetch('/api/agents/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(messageData)
+            })
+            .then(response => response.json())
+            .then(data => {
                 hideTypingIndicator();
+                if (data.success) {
+                    addMessage(data.response || data.message, 'assistant');
+                } else {
+                    addMessage("I apologize, but I encountered an error processing your request. Please try again.", 'assistant');
+                }
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                console.error('Error:', error);
                 addMessage("I understand your query. Let me research this for you using the available knowledge base and provide you with comprehensive insights.", 'assistant');
-            }, 2000);
+            });
+        }
+
+        function getSelectedAgent() {
+            const activeCard = document.querySelector('.agent-card.active');
+            return activeCard ? activeCard.dataset.agent : 'research';
         }
 
         function addMessage(content, sender) {
@@ -835,8 +973,112 @@
             });
         }
 
+        // Voice Configuration
+        let currentVoiceConfig = {
+            profile: 'default',
+            target: 'corporate',
+            satireModes: 'strategic-snark',
+            voiceStyle: 'caustic',
+            outputFormat: 'essay'
+        };
+
+        function initVoiceConfiguration() {
+            const voiceProfile = document.getElementById('voiceProfile');
+            const satiricalControls = document.getElementById('satiricalControls');
+            const satireModeGroup = document.getElementById('satireModeGroup');
+            const voiceStyleGroup = document.getElementById('voiceStyleGroup');
+            const voiceStatusText = document.getElementById('voiceStatusText');
+
+            // Voice profile change handler
+            voiceProfile.addEventListener('change', function() {
+                const isSSatirical = this.value === 'satirical';
+                
+                satiricalControls.style.display = isSSatirical ? 'flex' : 'none';
+                satireModeGroup.style.display = isSSatirical ? 'flex' : 'none';
+                voiceStyleGroup.style.display = isSSatirical ? 'flex' : 'none';
+                
+                currentVoiceConfig.profile = this.value;
+                updateVoiceStatus();
+                saveVoiceConfig();
+            });
+
+            // Other control handlers
+            document.getElementById('satiricalTarget').addEventListener('change', function() {
+                currentVoiceConfig.target = this.value;
+                updateVoiceStatus();
+                saveVoiceConfig();
+            });
+
+            document.getElementById('satireModes').addEventListener('change', function() {
+                currentVoiceConfig.satireModes = this.value;
+                updateVoiceStatus();
+                saveVoiceConfig();
+            });
+
+            document.getElementById('voiceStyle').addEventListener('change', function() {
+                currentVoiceConfig.voiceStyle = this.value;
+                updateVoiceStatus();
+                saveVoiceConfig();
+            });
+        }
+
+        function updateVoiceStatus() {
+            const voiceStatusText = document.getElementById('voiceStatusText');
+            if (currentVoiceConfig.profile === 'satirical') {
+                const targetLabels = {
+                    'corporate': 'Corporate',
+                    'tech': 'Tech',
+                    'politics': 'Political',
+                    'academia': 'Academic',
+                    'consumer': 'Consumer',
+                    'self-help': 'Self-Help',
+                    'media': 'Media'
+                };
+                const modeLabels = {
+                    'strategic-snark': 'Strategic Snark',
+                    'high-satire': 'High Satire',
+                    'soft-roast': 'Soft Roast',
+                    'deadpan': 'Deadpan',
+                    'socratic': 'Socratic'
+                };
+                voiceStatusText.textContent = `Satirical: ${targetLabels[currentVoiceConfig.target]} (${modeLabels[currentVoiceConfig.satireModes]})`;
+            } else {
+                voiceStatusText.textContent = 'Default Voice Active';
+            }
+        }
+
+        function saveVoiceConfig() {
+            // Save to session storage for persistence
+            localStorage.setItem('voiceConfig', JSON.stringify(currentVoiceConfig));
+            
+            // Send to backend API (implement when ready)
+            // fetch('/api/voice/session-config', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(currentVoiceConfig)
+            // });
+        }
+
+        function loadVoiceConfig() {
+            const saved = localStorage.getItem('voiceConfig');
+            if (saved) {
+                currentVoiceConfig = JSON.parse(saved);
+                
+                // Update UI to match saved config
+                document.getElementById('voiceProfile').value = currentVoiceConfig.profile;
+                document.getElementById('satiricalTarget').value = currentVoiceConfig.target;
+                document.getElementById('satireModes').value = currentVoiceConfig.satireModes;
+                document.getElementById('voiceStyle').value = currentVoiceConfig.voiceStyle;
+                
+                // Trigger change event to show/hide controls
+                document.getElementById('voiceProfile').dispatchEvent(new Event('change'));
+            }
+        }
+
         // Initialize
         initBackground();
+        initVoiceConfiguration();
+        loadVoiceConfig();
     </script>
 </body>
 </html>

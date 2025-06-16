@@ -6,7 +6,6 @@ import json
 import traceback
 import asyncio
 import threading
-import time
 from typing import Dict, Any
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
@@ -75,15 +74,7 @@ def create_app(config_name: str | None = None) -> Flask:
         from agent_flask_integration import register_agent_routes
         register_agent_routes(app)
         
-        # Register enhanced agent routes using the shared framework
-        try:
-            from enhanced_agent_integration import register_enhanced_agent_routes
-            register_enhanced_agent_routes(app)
-            print("✅ Enhanced agent system initialized with shared framework")
-            print("✅ Unified agent system initialized with 12 specialized agents")
-        except Exception as e:
-            print(f"⚠️  Enhanced agent integration failed: {e}")
-            app.enhanced_agent_integration = None
+        print("✅ Unified agent system initialized with 12 specialized agents")
         
         # Initialize RAG-Agent integration for code improvement
         try:
@@ -106,14 +97,6 @@ def create_app(config_name: str | None = None) -> Flask:
         print(f"⚠️  Agent system initialization failed: {e}")
         app.agent_manager = None
         app.code_orchestrator = None
-    
-    # Initialize advanced OpenAI features
-    try:
-        from services.advanced_openai_routes import register_advanced_openai_routes
-        register_advanced_openai_routes(app)
-        print("🔮 Advanced OpenAI features initialized (Vision, Structured Outputs, Real-time, Batch Processing)")
-    except Exception as e:
-        print(f"⚠️  Advanced OpenAI features initialization failed: {e}")
     
     # Register error handlers
     register_error_handlers(app)
@@ -163,16 +146,6 @@ def register_routes(app: Flask):
     def dashboard():
         """Render the AI agent dashboard page."""
         return render_template('agent_dashboard.html')
-    
-    @app.route('/nexus')
-    def nexus_dashboard():
-        """Render the NEXUS AI Platform dashboard."""
-        return render_template('nexus_dashboard.html')
-    
-    @app.route('/advanced-openai')
-    def advanced_openai():
-        """Render the advanced OpenAI features page."""
-        return render_template('advanced_openai.html')
     
     @app.route('/health')
     def health_check():
@@ -724,280 +697,18 @@ def register_routes(app: Flask):
                 'message': str(e)
             }), 500
     
-    # NEXUS AI Platform API Endpoints
-    @app.route('/api/nexus/system-status')
-    def nexus_system_status():
-        """Get real-time system status for NEXUS dashboard."""
-        try:
-            # Get basic system health
-            system_status = {
-                'timestamp': time.time(),
-                'status': 'operational',
-                'agent_count': 12,
-                'active_sessions': 1,
-                'uptime': time.time() - app.start_time if hasattr(app, 'start_time') else 0
-            }
-            
-            # Check agent availability
-            agent_status = {}
-            if hasattr(app, 'agent_manager') and app.agent_manager:
-                agents = ['CEO', 'Research', 'Triage', 'CodeAnalysis', 'CodeDebugger', 
-                         'CodeRepair', 'Performance', 'TestGenerator', 'Image', 
-                         'Audio', 'BrandIntelligence', 'BrandDeconstruction']
-                for agent in agents:
-                    agent_status[agent.lower()] = {
-                        'status': 'active',
-                        'last_used': time.time(),
-                        'success_rate': 98 + (hash(agent) % 3)  # Simulated data
-                    }
-            else:
-                # Fallback status
-                agents = ['CEO', 'Research', 'Triage', 'CodeAnalysis', 'CodeDebugger', 
-                         'CodeRepair', 'Performance', 'TestGenerator', 'Image', 
-                         'Audio', 'BrandIntelligence', 'BrandDeconstruction']
-                for agent in agents:
-                    agent_status[agent.lower()] = {
-                        'status': 'active',
-                        'last_used': time.time(),
-                        'success_rate': 98 + (hash(agent) % 3)
-                    }
-            
-            return jsonify({
-                'success': True,
-                'system': system_status,
-                'agents': agent_status,
-                'performance': {
-                    'cpu_usage': 45.2,
-                    'memory_usage': 68.7,
-                    'requests_per_minute': 23,
-                    'avg_response_time': 1.3
-                }
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e),
-                'system': {'status': 'degraded'}
-            }), 500
-
-    @app.route('/api/nexus/agent-metrics')
-    def nexus_agent_metrics():
-        """Get detailed agent performance metrics for NEXUS dashboard."""
-        try:
-            metrics = {
-                'timestamp': time.time(),
-                'total_requests': 1247,
-                'successful_requests': 1223,
-                'failed_requests': 24,
-                'agent_performance': {
-                    'ceo': {'requests': 156, 'success_rate': 97.4, 'avg_time': 2.1},
-                    'research': {'requests': 234, 'success_rate': 99.1, 'avg_time': 1.8},
-                    'triage': {'requests': 89, 'success_rate': 100.0, 'avg_time': 0.3},
-                    'code_analysis': {'requests': 143, 'success_rate': 96.5, 'avg_time': 3.2},
-                    'code_debugger': {'requests': 98, 'success_rate': 94.9, 'avg_time': 4.1},
-                    'code_repair': {'requests': 76, 'success_rate': 92.1, 'avg_time': 5.2},
-                    'performance': {'requests': 45, 'success_rate': 97.8, 'avg_time': 2.9},
-                    'test_generator': {'requests': 67, 'success_rate': 98.5, 'avg_time': 3.5},
-                    'image': {'requests': 123, 'success_rate': 96.7, 'avg_time': 6.8},
-                    'audio': {'requests': 34, 'success_rate': 94.1, 'avg_time': 4.2},
-                    'brand_intelligence': {'requests': 89, 'success_rate': 98.9, 'avg_time': 2.7},
-                    'brand_deconstruction': {'requests': 93, 'success_rate': 97.8, 'avg_time': 3.4}
-                }
-            }
-            
-            return jsonify({
-                'success': True,
-                'metrics': metrics
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
-
-    @app.route('/api/nexus/chat', methods=['POST'])
-    def nexus_chat():
-        """Enhanced chat interface for NEXUS dashboard."""
-        try:
-            data = request.get_json()
-            message = data.get('message', '')
-            agent_type = data.get('agent_type', 'research')
-            
-            if not message:
-                return jsonify({
-                    'success': False,
-                    'error': 'Message is required'
-                }), 400
-            
-            # Simulate agent response with enhanced formatting
-            response_data = {
-                'agent': agent_type,
-                'message': message,
-                'response': f"NEXUS {agent_type.upper()} Agent: Processing your request about '{message[:50]}...' - Advanced AI analysis completed.",
-                'timestamp': time.time(),
-                'processing_time': 1.2,
-                'confidence': 0.94,
-                'suggestions': [
-                    f"Consider using the {agent_type} agent for similar queries",
-                    "Upload relevant documents for enhanced context",
-                    "Enable knowledge base integration for better results"
-                ]
-            }
-            
-            return jsonify({
-                'success': True,
-                'data': response_data
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
-
-    @app.route('/api/nexus/knowledge-base')
-    def nexus_knowledge_base():
-        """Get knowledge base statistics for NEXUS dashboard."""
-        try:
-            kb_stats = {
-                'total_documents': 1547,
-                'vector_stores': 8,
-                'total_vectors': 89234,
-                'recent_uploads': [
-                    {'name': 'Technical_Spec_v2.pdf', 'size': '2.3 MB', 'uploaded': time.time() - 3600},
-                    {'name': 'Brand_Guidelines.docx', 'size': '1.8 MB', 'uploaded': time.time() - 7200},
-                    {'name': 'Market_Analysis.xlsx', 'size': '4.1 MB', 'uploaded': time.time() - 10800}
-                ],
-                'search_performance': {
-                    'avg_query_time': 0.8,
-                    'relevance_score': 0.92,
-                    'total_searches': 2341
-                }
-            }
-            
-            return jsonify({
-                'success': True,
-                'knowledge_base': kb_stats
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
-
-    # Brand Deconstruction Routes
-    @app.route('/brand-deconstruction')
-    def brand_deconstruction_page():
-        """Render the Brand Deconstruction page."""
-        return render_template('brand_deconstruction.html')
-
-    @app.route('/api/brand/deconstruct', methods=['POST'])
-    def deconstruct_brand():
-        """Deconstruct a brand from website URL using PENTAGRAM framework."""
-        try:
-            data = request.get_json()
-            url = data.get('url', '').strip()
-            
-            if not url:
-                return jsonify({
-                    'success': False,
-                    'error': 'Website URL is required'
-                }), 400
-            
-            # Validate URL format
-            if not url.startswith(('http://', 'https://')):
-                url = 'https://' + url
-            
-            # Import and initialize brand deconstruction service
-            from services.brand_deconstruction_service import BrandDeconstructionService
-            
-            api_key = os.getenv('OPENAI_API_KEY')
-            if not api_key:
-                return jsonify({
-                    'success': False,
-                    'error': 'OpenAI API key not configured'
-                }), 500
-            
-            service = BrandDeconstructionService(api_key)
-            
-            # Run deconstruction asynchronously
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(service.deconstruct_brand(url))
-            finally:
-                loop.close()
-            
-            return jsonify(result)
-            
-        except Exception as e:
-            current_app.logger.error(f"Brand deconstruction error: {str(e)}\n{traceback.format_exc()}")
-            return jsonify({
-                'success': False,
-                'error': f'Brand deconstruction failed: {str(e)}'
-            }), 500
-
-    @app.route('/api/brand/quick-analyze', methods=['POST'])
-    def quick_brand_analyze():
-        """Quick brand analysis without full PENTAGRAM framework."""
-        try:
-            data = request.get_json()
-            url = data.get('url', '').strip()
-            
-            if not url:
-                return jsonify({
-                    'success': False,
-                    'error': 'Website URL is required'
-                }), 400
-            
-            # Import service
-            from services.brand_deconstruction_service import BrandDeconstructionService
-            
-            api_key = os.getenv('OPENAI_API_KEY')
-            if not api_key:
-                return jsonify({
-                    'success': False,
-                    'error': 'OpenAI API key not configured'
-                }), 500
-            
-            service = BrandDeconstructionService(api_key)
-            
-            # Just scrape website for quick analysis
-            website_data = service.scrape_website(url)
-            
-            return jsonify({
-                'success': True,
-                'brand_name': website_data['brand_name'],
-                'title': website_data['title'],
-                'description': website_data['description'],
-                'url': url,
-                'preview': website_data['content'][:500] + '...' if len(website_data['content']) > 500 else website_data['content']
-            })
-            
-        except Exception as e:
-            current_app.logger.error(f"Quick brand analysis error: {str(e)}")
-            return jsonify({
-                'success': False,
-                'error': f'Quick analysis failed: {str(e)}'
-            }), 500
-
-    # ...existing code...
-    
 
 
 if __name__ == '__main__':
     import sys
     
     # Allow port to be specified as command line argument
-    port = 5001  # Default to 5001 to avoid AirPlay Receiver conflict
+    port = 5002  # Default to 5002 for AI Agent System
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("Invalid port number. Using default port 5001.")
+            print("Invalid port number. Using default port 5002.")
     
     # Allow port from environment variable
     port = int(os.getenv('FLASK_RUN_PORT', port))

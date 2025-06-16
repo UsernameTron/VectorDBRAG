@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Deconstruction - NEXUS AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus_theme.css') }}">
+    <style>
+        /* Brand Deconstruction specific styles */
+        .brand-hero {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .brand-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="%2300f5ff" stroke-width="0.5" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .brand-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #00f5ff;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .brand-subtitle {
+            font-size: 1.3rem;
+            color: #ffffff;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .url-input-section {
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px auto;
+            max-width: 800px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .url-input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .url-input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        
+        .url-input:focus {
+            border-color: #00f5ff;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+            outline: none;
+        }
+        
+        .analyze-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #00f5ff, #0080ff);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 255, 0.4);
+        }
+        
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .quick-examples {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .example-btn {
+            padding: 8px 16px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 20px;
+            color: #00f5ff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .example-btn:hover {
+            background: rgba(0, 245, 255, 0.2);
+            border-color: #00f5ff;
+        }
+        
+        .results-section {
+            margin: 40px auto;
+            max-width: 1200px;
+            display: none;
+        }
+        
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #00f5ff;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 245, 255, 0.3);
+            border-top: 3px solid #00f5ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .brand-results {
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .brand-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+        }
+        
+        .brand-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            color: #00f5ff;
+            margin-bottom: 10px;
+        }
+        
+        .brand-essence {
+            font-size: 1.2rem;
+            color: #ffffff;
+            opacity: 0.9;
+            font-style: italic;
+        }
+        
+        .pentagram-analysis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .pentagram-point {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .pentagram-point:hover {
+            border-color: #00f5ff;
+            transform: translateY(-2px);
+        }
+        
+        .point-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            color: #00f5ff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .point-content {
+            color: #ffffff;
+            line-height: 1.6;
+        }
+        
+        .prompt-section {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .prompt-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #ff3366;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .prompt-text {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #ffffff;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(135deg, #ff3366, #ff6b9d);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 51, 102, 0.4);
+        }
+        
+        .error-state {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            color: #ff3366;
+        }
+        
+        @media (max-width: 768px) {
+            .brand-title { font-size: 2.5rem; }
+            .url-input-group { flex-direction: column; }
+            .pentagram-analysis { grid-template-columns: 1fr; }
+            .quick-examples { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated stars background -->
+    <div class="stars" id="stars"></div>
+    
+    <!-- Header -->
+    <header class="nexus-header">
+        <div class="nexus-logo">NEXUS AI</div>
+        <nav>
+            <ul class="nexus-nav">
+                <li><a href="/nexus" class="nexus-nav-item">Dashboard</a></li>
+                <li><a href="/brand-deconstruction" class="nexus-nav-item active">Brand Deconstruction</a></li>
+                <li><a href="#agents" class="nexus-nav-item">Agents</a></li>
+                <li><a href="#knowledge" class="nexus-nav-item">Knowledge Base</a></li>
+                <li><a href="#monitoring" class="nexus-nav-item">Monitoring</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <!-- Main container -->
+    <div class="container">
+        <!-- Hero section -->
+        <section class="brand-hero">
+            <h1 class="brand-title">Brand Deconstruction</h1>
+            <p class="brand-subtitle">Satirical brand analysis using PENTAGRAM framework for ultra-fidelity image generation</p>
+        </section>
+        
+        <!-- URL Input Section -->
+        <section class="url-input-section">
+            <div class="url-input-group">
+                <input type="url" 
+                       id="brand-url" 
+                       class="url-input" 
+                       placeholder="Enter website URL (e.g., apple.com, nike.com, starbucks.com)"
+                       autocomplete="url">
+                <button id="analyze-btn" class="analyze-btn" onclick="analyzeBrand()">
+                    Deconstruct Brand
+                </button>
+            </div>
+            
+            <div class="quick-examples">
+                <span style="color: #ffffff; margin-right: 10px; opacity: 0.8;">Quick examples:</span>
+                <button class="example-btn" onclick="setExample('apple.com')">Apple</button>
+                <button class="example-btn" onclick="setExample('nike.com')">Nike</button>
+                <button class="example-btn" onclick="setExample('starbucks.com')">Starbucks</button>
+                <button class="example-btn" onclick="setExample('mcdonalds.com')">McDonald's</button>
+                <button class="example-btn" onclick="setExample('tesla.com')">Tesla</button>
+            </div>
+        </section>
+        
+        <!-- Results Section -->
+        <section id="results-section" class="results-section">
+            <!-- Loading state -->
+            <div id="loading-state" class="loading-state" style="display: none;">
+                <div class="loading-spinner"></div>
+                <h3>Analyzing Brand...</h3>
+                <p>Scraping website • Conducting PENTAGRAM analysis • Generating satirical prompt</p>
+            </div>
+            
+            <!-- Error state -->
+            <div id="error-state" class="error-state" style="display: none;">
+                <h3>⚠️ Analysis Failed</h3>
+                <p id="error-message">Unable to analyze brand. Please try a different URL.</p>
+                <button class="nexus-btn" onclick="clearResults()">Try Again</button>
+            </div>
+            
+            <!-- Results -->
+            <div id="brand-results" class="brand-results" style="display: none;">
+                <!-- Brand header -->
+                <div class="brand-header">
+                    <div id="brand-name" class="brand-name">Brand Name</div>
+                    <div id="brand-essence" class="brand-essence">Core brand essence</div>
+                </div>
+                
+                <!-- PENTAGRAM Analysis -->
+                <div class="pentagram-analysis">
+                    <div class="pentagram-point">
+                        <div class="point-label">P - Physicality</div>
+                        <div id="point-physicality" class="point-content">Physical attributes and materials</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">E - Environment</div>
+                        <div id="point-environment" class="point-content">Spatial context and lighting</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">N - Narrative</div>
+                        <div id="point-narrative" class="point-content">Emotional story and concept</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">T - Texture</div>
+                        <div id="point-texture" class="point-content">Surface behavior and interaction</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">A - Atmosphere</div>
+                        <div id="point-atmosphere" class="point-content">Lighting mood and color</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">G - Geometry</div>
+                        <div id="point-geometry" class="point-content">Framing and composition</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">R - Rendering</div>
+                        <div id="point-rendering" class="point-content">Technical fidelity specs</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">A - Art Direction</div>
+                        <div id="point-art-direction" class="point-content">Visual style and identity</div>
+                    </div>
+                    <div class="pentagram-point">
+                        <div class="point-label">M - Motion Absence</div>
+                        <div id="point-motion" class="point-content">Stillness specifications</div>
+                    </div>
+                </div>
+                
+                <!-- Ultra-Fidelity Prompt -->
+                <div class="prompt-section">
+                    <div class="prompt-title">🎭 ULTRA-FIDELITY IMAGE PROMPT</div>
+                    <div id="ultra-prompt" class="prompt-text">Generated prompt will appear here...</div>
+                    <button class="copy-btn" onclick="copyPrompt()">📋 Copy Prompt for Image Generation</button>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        let currentAnalysis = null;
+        
+        function setExample(url) {
+            document.getElementById('brand-url').value = url;
+        }
+        
+        async function analyzeBrand() {
+            const urlInput = document.getElementById('brand-url');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Please enter a website URL');
+                return;
+            }
+            
+            // Show loading state
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/brand/deconstruct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Analysis failed');
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError('Network error. Please check your connection and try again.');
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('loading-state').style.display = 'block';
+            document.getElementById('error-state').style.display = 'none';
+            document.getElementById('brand-results').style.display = 'none';
+            
+            // Disable analyze button
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+        }
+        
+        function showError(message) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+            document.getElementById('brand-results').style.display = 'none';
+            document.getElementById('error-message').textContent = message;
+            
+            // Re-enable analyze button
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = false;
+            btn.textContent = 'Deconstruct Brand';
+        }
+        
+        function displayResults(data) {
+            currentAnalysis = data;
+            
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-state').style.display = 'none';
+            document.getElementById('brand-results').style.display = 'block';
+            
+            // Populate brand info
+            document.getElementById('brand-name').textContent = data.brand_name;
+            document.getElementById('brand-essence').textContent = data.pentagram_analysis.center_essence;
+            
+            // Populate PENTAGRAM points
+            const points = data.pentagram_analysis;
+            document.getElementById('point-physicality').textContent = points.physicality;
+            document.getElementById('point-environment').textContent = points.environment;
+            document.getElementById('point-narrative').textContent = points.narrative;
+            document.getElementById('point-texture').textContent = points.texture;
+            document.getElementById('point-atmosphere').textContent = points.atmosphere;
+            document.getElementById('point-geometry').textContent = points.geometry;
+            document.getElementById('point-rendering').textContent = points.rendering;
+            document.getElementById('point-art-direction').textContent = points.art_direction;
+            document.getElementById('point-motion').textContent = points.motion_absence;
+            
+            // Display ultra-fidelity prompt
+            document.getElementById('ultra-prompt').textContent = data.ultra_fidelity_prompt;
+            
+            // Re-enable analyze button
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = false;
+            btn.textContent = 'Deconstruct Brand';
+        }
+        
+        function clearResults() {
+            document.getElementById('results-section').style.display = 'none';
+            document.getElementById('brand-url').value = '';
+            document.getElementById('brand-url').focus();
+        }
+        
+        function copyPrompt() {
+            const prompt = document.getElementById('ultra-prompt').textContent;
+            navigator.clipboard.writeText(prompt).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = 'linear-gradient(135deg, #00f5ff, #0080ff)';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #ff3366, #ff6b9d)';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy prompt. Please select and copy manually.');
+            });
+        }
+        
+        // Allow Enter key to trigger analysis
+        document.getElementById('brand-url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeBrand();
+            }
+        });
+        
+        // Initialize stars background
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const numStars = 200;
+            
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            createStars();
+            document.getElementById('brand-url').focus();
+        });
+    </script>
+</body>
+</html>

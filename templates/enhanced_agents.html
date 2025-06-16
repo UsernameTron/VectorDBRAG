@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced AI Agents</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Enhanced AI Agents Dashboard</h1>
+        
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Select Agent:</label>
+                <select id="agentSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="research_analysis">🔍 Research Analysis</option>
+                    <option value="code_analysis">💻 Code Analysis</option>
+                    <option value="code_debugging">🐛 Code Debugging</option>
+                    <option value="code_repair">🔧 Code Repair</option>
+                    <option value="test_generation">🧪 Test Generation</option>
+                    <option value="performance_profiler">📊 Performance Profiler</option>
+                    <option value="ceo">👔 CEO Strategy</option>
+                    <option value="triage">🎯 Triage</option>
+                    <option value="image">🖼️ Image Analysis</option>
+                    <option value="audio">🎵 Audio Analysis</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Your Query:</label>
+                <textarea id="userInput" class="w-full p-3 border border-gray-300 rounded-lg h-32 focus:ring-2 focus:ring-blue-500" 
+                         placeholder="Enter your query or paste code here..."></textarea>
+            </div>
+            
+            <button id="submitBtn" class="w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-200">
+                Submit to Agent
+            </button>
+            
+            <div id="response" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+                <h3 class="font-semibold mb-2">Agent Response:</h3>
+                <div id="responseContent" class="whitespace-pre-wrap"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const agent = document.getElementById('agentSelect').value;
+            const input = document.getElementById('userInput').value;
+            const responseDiv = document.getElementById('response');
+            const responseContent = document.getElementById('responseContent');
+            
+            if (!input.trim()) return;
+            
+            try {
+                const response = await fetch('/api/enhanced/agents/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        query: input,
+                        agent_type: agent
+                    })
+                });
+                
+                const data = await response.json();
+                responseContent.textContent = data.response || data.error || 'No response';
+                responseDiv.classList.remove('hidden');
+            } catch (error) {
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,13 @@ import logging
 import time
 from typing import List, Dict, Optional
 from openai import OpenAI
+import sys
+import os
+
+# Add current directory to path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
 from file_manager import FileUploader
 from vector_store_manager import VectorStoreManager
 from search_interface import SearchInterface
